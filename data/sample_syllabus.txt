@@ -1,0 +1,26 @@
+COURSE SYLLABUS: DATABASE MANAGEMENT SYSTEMS (DBMS)
+
+Unit 1: Database System Concepts and Architecture
+- File Systems vs DBMS, Data Independence, Three-Schema Architecture.
+- Entity-Relationship (ER) Modeling: Entities, Attributes, Relationships, ER Diagrams, Extended ER Features.
+- Relational Model: Relational Data Structure, Keys (Primary, Foreign, Candidate, Super Key), Relational Constraints.
+
+Unit 2: SQL and Relational Query Languages
+- Data Definition Language (DDL), Data Manipulation Language (DML), Data Control Language (DCL).
+- Complex SQL Queries: Joins, Aggregation (GROUP BY, HAVING), Subqueries, Views.
+- Relational Algebra Operations: Select, Project, Join, Set Operations.
+
+Unit 3: Database Design and Normalization
+- Functional Dependencies and Decomposition.
+- Normal Forms: 1NF, 2NF, 3NF, Boyce-Codd Normal Form (BCNF), 4NF.
+- Multi-valued Dependencies and Join Dependencies.
+
+Unit 4: Transaction Management and Concurrency Control
+- Transaction Concepts and ACID Properties.
+- Concurrency Control: Serializability, Lock-Based Protocols (2PL, Shared/Exclusive Locks), Deadlocks.
+- Database Recovery: Write-Ahead Logging (WAL), Checkpoints, Shadow Paging.
+
+Unit 5: Storage, Indexing, and Modern Databases
+- Storage Structures, File Organization, Indexing Techniques (B-Tree, B+ Tree, Hash Indexing).
+- Query Processing and Cost-Based Query Optimization.
+- Distributed Databases, CAP Theorem, NoSQL Databases (Document Stores, Key-Value Stores).

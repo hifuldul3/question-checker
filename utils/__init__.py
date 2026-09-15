@@ -1,0 +1,3 @@
+"""
+EduGuard AI - Utilities Package
+"""

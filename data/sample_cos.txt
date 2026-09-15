@@ -1,0 +1,5 @@
+CO1: Explain core database concepts, relational data models, and ER diagram design.
+CO2: Construct efficient SQL queries and relational algebra expressions for database manipulation.
+CO3: Apply functional dependencies and normalization techniques (1NF to BCNF) to design non-redundant database schemas.
+CO4: Analyze transaction processing, ACID properties, locking protocols, and database recovery mechanisms.
+CO5: Evaluate database storage, indexing structures, query optimization, and modern NoSQL architectures.

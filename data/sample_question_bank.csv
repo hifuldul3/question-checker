@@ -1,0 +1,51 @@
+Question ID,Question Text,Marks,Topic,Question Type
+Q1,What is DBMS?,2,Database Concepts,Short Answer
+Q2,Explain the core architecture of Relational Database Management Systems.,5,Database Concepts,Descriptive
+Q3,Define database normalization and explain functional dependencies.,10,Normalization,Descriptive
+Q4,Explain normalization.,5,Normalization,Descriptive
+Q5,Given a student table with repeating groups normalize up to 3NF.,10,Normalization,Numerical
+Q6,Define primary key and foreign key with examples.,5,Relational Model,Descriptive
+Q7,What is DBMS?,2,Database Concepts,Short Answer
+Q8,Explain this.,5,General,Descriptive
+Q9,Explain the above method and show how it works.,5,Database Concepts,Descriptive
+Q10,Discuss the system and its benefits.,5,Database Concepts,Descriptive
+Q11,Calculate the result.,5,Transactions,Numerical
+Q12,Explain database normalization techniques in detail.,10,Normalization,Descriptive
+Q13,What are the rules of Second Normal Form (2NF)?,5,Normalization,Short Answer
+Q14,What is 2NF and what rules does it follow?,5,Normalization,Short Answer
+Q15,Explain Boyce-Codd Normal Form (BCNF) with a suitable relational schema.,10,Normalization,Descriptive
+Q16,Define ACID properties of a transaction in DBMS.,5,Transactions,Short Answer
+Q17,Explain Atomicity Consistency Isolation and Durability in transaction management.,10,Transactions,Descriptive
+Q18,What is deadlock in transaction processing and how can it be prevented?,10,Transactions,Descriptive
+Q19,Write SQL query to find second highest salary of employee.,5,SQL,Code/Design
+Q20,Construct an SQL query to retrieve employees earning second highest salary.,5,SQL,Code/Design
+Q21,Define indexing and compare B-Tree index with B+ Tree index.,10,Indexing,Descriptive
+Q22,Explain B+ tree structure and why it is preferred for database indexing.,10,Indexing,Descriptive
+Q23,What is ER diagram? Explain entities attributes and relationships.,5,ER Modeling,Descriptive
+Q24,Design an ER Diagram for a University Examination System showing cardinality.,10,ER Modeling,Code/Design
+Q25,Differentiate between DDL DML and DCL statements with SQL examples.,5,SQL,Descriptive
+Q26,Explain Join operation in relational algebra and detail Inner Left Right Outer joins.,10,Relational Algebra,Descriptive
+Q27,What is concurrency control? Explain Two-Phase Locking (2PL) protocol.,10,Transactions,Descriptive
+Q28,Explain shared lock and exclusive lock in 2PL protocol.,5,Transactions,Short Answer
+Q29,Describe view in SQL and explain how views improve database security.,5,SQL,Descriptive
+Q30,Explain query optimization and discuss cost-based query optimizer.,10,Query Processing,Descriptive
+Q31,"Define candidate key, super key, and primary key.",5,Relational Model,Short Answer
+Q32,What is functional dependency? Explain Armstrong Axioms.,10,Normalization,Descriptive
+Q33,Explain write ahead logging mechanism in database recovery.,10,Transactions,Descriptive
+Q34,What is shadow paging recovery technique?,5,Transactions,Short Answer
+Q35,Compare SQL databases with NoSQL databases based on ACID scalability schema.,10,NoSQL,Descriptive
+Q36,Explain CAP theorem in distributed database systems.,5,Distributed DB,Short Answer
+Q37,Design a normalized schema for an E-Commerce platform managing Orders and Products.,15,Normalization,Code/Design
+Q38,"Given relation R(A,B,C,D) with FDs A->B and B->C identify candidate keys and highest NF.",10,Normalization,Numerical
+Q39,Justify the use of 4NF over 3NF in handling multi-valued dependencies.,10,Normalization,Descriptive
+Q40,Critique the performance impact of unindexed foreign keys in high-volume transaction databases.,10,Indexing,Descriptive
+Q41,Formulate a database backup and disaster recovery policy for a hospital management system.,15,Transactions,Code/Design
+Q42,What is DBMS?,2,Database Concepts,Short Answer
+Q43,Define normalization and its importance in database design.,5,Normalization,Descriptive
+Q44,Explain the difference between clustered and non-clustered indexes.,5,Indexing,Short Answer
+Q45,"Write an SQL query using GROUP BY and HAVING clauses to find departments with >5 staff.",5,SQL,Code/Design
+Q46,What is dirty read problem in concurrent transaction execution?,5,Transactions,Short Answer
+Q47,Explain lost update anomaly with a step-by-step execution timeline.,5,Transactions,Descriptive
+Q48,State True or False: Foreign key columns can contain NULL values.,2,Relational Model,True/False
+Q49,"Which of the following normal forms eliminates transitive dependency? A) 1NF B) 2NF C) 3NF D) BCNF",2,Normalization,Multiple Choice
+Q50,Evaluate the scalability of MongoDB document store vs PostgreSQL relational DB for IoT logs.,10,NoSQL,Descriptive
