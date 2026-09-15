@@ -18,7 +18,12 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
     st.title("Question Bank & Configuration Upload")
     st.markdown("Upload custom question banks (CSV, XLSX, PDF), course syllabus, and course outcomes.")
 
-    tab1, tab2, tab3 = st.tabs(["Question Bank Upload", "Syllabus & CO Upload", "Demo Data Quick Start"])
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "Question Bank Upload", 
+        "Direct Input (Quick Add)", 
+        "Syllabus & CO Upload", 
+        "Demo Data Quick Start"
+    ])
 
     with tab1:
         st.subheader("1. Upload Question Bank File")
@@ -74,14 +79,56 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
                             st.write(err)
 
                     if st.button("Process & Analyze Uploaded Question Bank", type="primary"):
-                        on_new_data_loaded_callback(valid_questions, uploaded_file.name)
+                        with st.spinner("⚡ Processing & Analyzing Question Bank..."):
+                            on_new_data_loaded_callback(valid_questions, uploaded_file.name)
                         st.success(f"Successfully loaded and analyzed {len(valid_questions)} questions from {uploaded_file.name}!")
                         st.rerun()
             except Exception as e:
                 st.error(f"Error reading file: {str(e)}")
 
     with tab2:
-        st.subheader("2. Upload Syllabus & Course Outcomes (Optional)")
+        st.subheader("2. Direct Question Input & Instant Analysis")
+        st.caption("Type or paste custom questions directly to get immediate quality metrics and AI feedback.")
+        
+        with st.form("direct_input_form"):
+            col_q1, col_q2 = st.columns([1, 1])
+            with col_q1:
+                q_id_input = st.text_input("Question ID", value=f"Q{len(st.session_state.get('questions', [])) + 1}")
+                q_marks_input = st.number_input("Marks", min_value=1.0, max_value=100.0, value=5.0, step=1.0)
+            with col_q2:
+                q_topic_input = st.text_input("Topic / Unit", value="Data Structures & Algorithms")
+                q_type_input = st.selectbox("Question Type", ["Descriptive", "Multiple Choice", "Numerical", "Code"])
+
+            q_text_input = st.text_area(
+                "Enter Question Text", 
+                value="What is a Binary Search Tree? Explain its insertion and deletion algorithms with time complexity.",
+                height=100
+            )
+
+            submit_direct = st.form_submit_button("⚡ Analyze Question Instantly", type="primary", use_container_width=True)
+
+        if submit_direct:
+            if not q_text_input.strip():
+                st.error("Please enter a question text.")
+            else:
+                from models import Question
+                new_q = Question(
+                    id=q_id_input.strip(),
+                    text=q_text_input.strip(),
+                    marks=q_marks_input,
+                    topic=q_topic_input.strip(),
+                    question_type=q_type_input
+                )
+                existing_qs = list(st.session_state.get("questions", []))
+                # Add or replace question in session state list
+                updated_qs = [q for q in existing_qs if q.id != new_q.id] + [new_q]
+                with st.spinner("⚡ Running AI quality analysis..."):
+                    on_new_data_loaded_callback(updated_qs, "Custom Input Question Bank")
+                st.success(f"Question {new_q.id} analyzed successfully!")
+                st.rerun()
+
+    with tab3:
+        st.subheader("3. Upload Syllabus & Course Outcomes (Optional)")
 
         col_s, col_co = st.columns(2)
         with col_s:
@@ -123,13 +170,15 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
                     st.session_state["course_outcomes"] = cos
                     st.success(f"Loaded {len(cos)} Course Outcomes!")
 
-    with tab3:
-        st.subheader("3. Instant Hackathon Demo Setup")
+    with tab4:
+        st.subheader("4. Instant Demo Setup")
         st.info(
             "Click below to immediately populate the application with a built-in 50-question database "
             "containing exact duplicates, near duplicates, ambiguous items, grammar errors, Bloom levels, and CO mappings."
         )
         if st.button("🚀 Load 50-Question Demo Dataset", type="primary"):
-            load_demo_callback()
+            with st.spinner("⚡ Loading 50-Question Demo Bank..."):
+                load_demo_callback()
             st.success("Demo dataset loaded into EduGuard AI!")
             st.rerun()
+
