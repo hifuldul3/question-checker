@@ -84,51 +84,100 @@ def load_question_bank_pdf(file_bytes: bytes) -> List[Question]:
 
 
 def parse_pdf_text_to_questions(raw_text: str) -> List[Question]:
-    """Parses raw extracted PDF text using common pattern matching."""
+    """
+    Parses raw extracted PDF text into Question objects.
+    Extracts Question IDs, question text, embedded marks, topic headers, and question types.
+    """
     lines = raw_text.splitlines()
     questions = []
-    q_counter = 1
+    current_topic = "General"
     current_q_id = None
     current_text = []
+    current_marks = 5.0
+    q_counter = 1
 
-    pattern = re.compile(r"^\s*(?:Q(?:uestion)?\s*(\d+)|(\d+))\s*[\.\:\)]\s*(.+)$", re.IGNORECASE)
+    q_pattern = re.compile(r"^\s*(?:Q(?:uestion)?[\.\s]*(\d+)|(\d+))\s*[\.\:\)\-]\s*(.+)$", re.IGNORECASE)
+    marks_pattern = re.compile(r"(?:\[|\()(\d+(?:\.\d+)?)\s*(?:marks?|m)?(?:\]|\))", re.IGNORECASE)
+    topic_pattern = re.compile(r"^\s*(?:Unit|Module|Topic|Chapter)\s*\d*[\:\-]\s*(.+)$", re.IGNORECASE)
 
     for line in lines:
         line_str = line.strip()
         if not line_str:
             continue
 
-        match = pattern.match(line_str)
-        if match:
+        # Check for Topic / Unit header line
+        t_match = topic_pattern.match(line_str)
+        if t_match:
+            current_topic = t_match.group(1).strip()
+            continue
+
+        # Check for new Question start line
+        q_match = q_pattern.match(line_str)
+        if q_match:
             if current_q_id and current_text:
+                full_text = " ".join(current_text).strip()
+                q_type = "MCQ" if any(opt in full_text for opt in ["(A)", "(a)", "A)", "B)"]) else "Descriptive"
                 questions.append(Question(
                     id=current_q_id,
-                    text=" ".join(current_text).strip(),
+                    text=full_text,
+                    marks=current_marks,
+                    topic=current_topic,
+                    question_type=q_type
+                ))
+                current_text = []
+                current_marks = 5.0
+
+            num = q_match.group(1) or q_match.group(2)
+            current_q_id = f"Q{num}" if num else f"Q{q_counter}"
+            rest = q_match.group(3)
+
+            # Check if marks specified in title line
+            m_match = marks_pattern.search(rest)
+            if m_match:
+                try:
+                    current_marks = float(m_match.group(1))
+                except ValueError:
+                    current_marks = 5.0
+
+            current_text.append(rest)
+            q_counter += 1
+        else:
+            if current_q_id:
+                m_match = marks_pattern.search(line_str)
+                if m_match:
+                    try:
+                        current_marks = float(m_match.group(1))
+                    except ValueError:
+                        pass
+                current_text.append(line_str)
+
+    # Append last question
+    if current_q_id and current_text:
+        full_text = " ".join(current_text).strip()
+        q_type = "MCQ" if any(opt in full_text for opt in ["(A)", "(a)", "A)", "B)"]) else "Descriptive"
+        questions.append(Question(
+            id=current_q_id,
+            text=full_text,
+            marks=current_marks,
+            topic=current_topic,
+            question_type=q_type
+        ))
+
+    # Fallback if no numbered questions detected: split by non-empty blocks
+    if not questions and raw_text.strip():
+        paragraphs = [p.strip() for p in raw_text.split("\n\n") if p.strip()]
+        for idx, p in enumerate(paragraphs, 1):
+            if len(p) >= 10:
+                questions.append(Question(
+                    id=f"Q{idx}",
+                    text=p,
                     marks=5.0,
                     topic="General",
                     question_type="Descriptive"
                 ))
-                current_text = []
-
-            num = match.group(1) or match.group(2)
-            current_q_id = f"Q{num}" if num else f"Q{q_counter}"
-            q_text_start = match.group(3)
-            current_text.append(q_text_start)
-            q_counter += 1
-        else:
-            if current_q_id:
-                current_text.append(line_str)
-
-    if current_q_id and current_text:
-        questions.append(Question(
-            id=current_q_id,
-            text=" ".join(current_text).strip(),
-            marks=5.0,
-            topic="General",
-            question_type="Descriptive"
-        ))
 
     return questions
+
 
 
 def load_course_outcomes(file_content: str) -> List[CourseOutcome]:

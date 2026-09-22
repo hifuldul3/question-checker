@@ -56,6 +56,16 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True
                 )
+            pdf_path = DATA_DIR / "sample_question_bank.pdf"
+            if pdf_path.exists():
+                st.download_button(
+                    "📕 Download Sample PDF Bank",
+                    data=pdf_path.read_bytes(),
+                    file_name="sample_question_bank.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+
 
         if uploaded_file is not None:
             file_ext = uploaded_file.name.split(".")[-1].lower()
