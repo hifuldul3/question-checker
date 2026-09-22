@@ -128,47 +128,140 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
                 st.rerun()
 
     with tab3:
-        st.subheader("3. Upload Syllabus & Course Outcomes (Optional)")
+        st.subheader("3. Syllabus & Course Outcomes (CO) Management")
+        st.caption("Upload files or paste text for your course syllabus and outcomes. Updating here automatically re-analyzes all questions.")
+
+        # --- Active Status Summary Cards ---
+        curr_syl = st.session_state.get("syllabus_text", "")
+        curr_cos = st.session_state.get("course_outcomes", [])
+        
+        col_stat1, col_stat2 = st.columns(2)
+        with col_stat1:
+            st.info(f"📘 **Active Syllabus Status**: {'Configured (' + str(len(curr_syl.split())) + ' words)' if curr_syl.strip() else 'No Syllabus Loaded'}")
+        with col_stat2:
+            st.info(f"🎯 **Active Course Outcomes**: {len(curr_cos)} COs Loaded ({', '.join([c.code for c in curr_cos[:5]]) if curr_cos else 'None'})")
+
+        st.markdown("---")
 
         col_s, col_co = st.columns(2)
+
+        # --- SECTION 1: COURSE SYLLABUS ---
         with col_s:
-            st.markdown("#### Course Syllabus")
+            st.markdown("### 📚 1. Course Syllabus")
+            
             if SAMPLE_SYLLABUS_PATH.exists():
                 st.download_button(
-                    "📥 Download Sample Syllabus (.txt)",
+                    "📥 Download Sample Syllabus File",
                     data=SAMPLE_SYLLABUS_PATH.read_bytes(),
                     file_name="sample_syllabus.txt",
-                    mime="text/plain"
+                    mime="text/plain",
+                    use_container_width=True
                 )
-            syllabus_file = st.file_uploader("Upload Syllabus (.txt)", type=["txt"])
-            syllabus_text_input = st.text_area("Or Paste Syllabus Text", height=150)
-            if st.button("Update Syllabus"):
-                s_text = ""
-                if syllabus_file:
-                    s_text = syllabus_file.getvalue().decode("utf-8", errors="ignore")
-                elif syllabus_text_input:
-                    s_text = syllabus_text_input
-                if s_text:
-                    st.session_state["syllabus_text"] = s_text
-                    st.success("Syllabus updated successfully!")
+            
+            syl_file = st.file_uploader(
+                "Upload Syllabus File (.txt, .pdf, .docx, .csv)", 
+                type=["txt", "pdf", "docx", "csv"],
+                key="syl_uploader"
+            )
+            
+            # Pre-fill text area with uploaded file content OR active session state
+            default_syl_text = curr_syl
+            if syl_file is not None:
+                from modules.file_loader import extract_text_from_file
+                extracted_syl = extract_text_from_file(syl_file.name, syl_file.getvalue())
+                if extracted_syl.strip():
+                    default_syl_text = extracted_syl
+                    st.success(f"Loaded text from {syl_file.name}!")
 
+            syl_text_input = st.text_area(
+                "View / Edit / Paste Syllabus Text",
+                value=default_syl_text,
+                height=180,
+                key="syl_text_area",
+                help="Type or paste unit topics, concepts, and course content."
+            )
+
+            if st.button("💾 Save & Re-Analyze Syllabus", type="primary", use_container_width=True):
+                if not syl_text_input.strip():
+                    st.error("Syllabus text cannot be empty.")
+                else:
+                    st.session_state["syllabus_text"] = syl_text_input.strip()
+                    # Re-analyze questions if available
+                    existing_qs = st.session_state.get("questions", [])
+                    if existing_qs:
+                        with st.spinner("⚡ Re-analyzing syllabus relevance for all questions..."):
+                            on_new_data_loaded_callback(existing_qs, "Updated Syllabus Analysis")
+                        st.success(f"Syllabus updated & re-analyzed across {len(existing_qs)} questions!")
+                    else:
+                        st.success("Syllabus updated successfully!")
+                    st.rerun()
+
+        # --- SECTION 2: COURSE OUTCOMES (COs) ---
         with col_co:
-            st.markdown("#### Course Outcomes (COs)")
+            st.markdown("### 🎯 2. Course Outcomes (COs)")
+            
             if SAMPLE_COS_PATH.exists():
                 st.download_button(
-                    "📥 Download Sample COs (.txt)",
+                    "📥 Download Sample COs File",
                     data=SAMPLE_COS_PATH.read_bytes(),
                     file_name="sample_cos.txt",
-                    mime="text/plain"
+                    mime="text/plain",
+                    use_container_width=True
                 )
-            co_file = st.file_uploader("Upload Course Outcomes (.txt / .csv)", type=["txt", "csv"])
-            if st.button("Update Course Outcomes"):
-                if co_file:
-                    co_text = co_file.getvalue().decode("utf-8", errors="ignore")
-                    cos = load_course_outcomes(co_text)
-                    st.session_state["db_handler"].save_course_outcomes(cos)
-                    st.session_state["course_outcomes"] = cos
-                    st.success(f"Loaded {len(cos)} Course Outcomes!")
+
+            co_file = st.file_uploader(
+                "Upload Course Outcomes File (.txt, .csv, .pdf, .docx)", 
+                type=["txt", "csv", "pdf", "docx"],
+                key="co_uploader"
+            )
+
+            # Pre-fill CO text area
+            default_co_text = "\n".join([f"{c.code}: {c.description}" for c in curr_cos])
+            if co_file is not None:
+                from modules.file_loader import extract_text_from_file
+                extracted_co = extract_text_from_file(co_file.name, co_file.getvalue())
+                if extracted_co.strip():
+                    default_co_text = extracted_co
+                    st.success(f"Loaded outcomes from {co_file.name}!")
+
+            if not default_co_text.strip():
+                default_co_text = (
+                    "CO1: Understand fundamental concepts of data structures and algorithms.\n"
+                    "CO2: Analyze time and space complexity of sorting and searching techniques.\n"
+                    "CO3: Apply tree and graph data structures to solve complex engineering problems.\n"
+                    "CO4: Evaluate algorithmic performance under constraints.\n"
+                    "CO5: Design efficient dynamic programming solutions."
+                )
+
+            co_text_input = st.text_area(
+                "View / Edit / Paste Course Outcomes (Format: CODE: Description)",
+                value=default_co_text,
+                height=180,
+                key="co_text_area",
+                help="Enter one CO per line, e.g. CO1: Description"
+            )
+
+            if st.button("💾 Save & Re-Analyze Course Outcomes", type="primary", use_container_width=True):
+                if not co_text_input.strip():
+                    st.error("Course Outcomes text cannot be empty.")
+                else:
+                    from modules.file_loader import load_course_outcomes
+                    new_cos = load_course_outcomes(co_text_input.strip())
+                    if not new_cos:
+                        st.error("No valid Course Outcomes found in text.")
+                    else:
+                        st.session_state["db_handler"].save_course_outcomes(new_cos)
+                        st.session_state["course_outcomes"] = new_cos
+                        
+                        existing_qs = st.session_state.get("questions", [])
+                        if existing_qs:
+                            with st.spinner("⚡ Re-mapping Course Outcomes (COs) for all questions..."):
+                                on_new_data_loaded_callback(existing_qs, "Updated CO Analysis")
+                            st.success(f"Loaded {len(new_cos)} COs & re-mapped across {len(existing_qs)} questions!")
+                        else:
+                            st.success(f"Loaded {len(new_cos)} Course Outcomes successfully!")
+                        st.rerun()
+
 
     with tab4:
         st.subheader("4. Instant Demo Setup")

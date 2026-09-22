@@ -152,3 +152,30 @@ def load_course_outcomes(file_content: str) -> List[CourseOutcome]:
             desc = line
         cos.append(CourseOutcome(code=code, description=desc))
     return cos
+
+
+def extract_text_from_file(file_name: str, file_bytes: bytes) -> str:
+    """Extracts plain text content from uploaded TXT, CSV, PDF, or DOCX files."""
+    ext = file_name.split(".")[-1].lower() if "." in file_name else ""
+    if ext == "pdf":
+        try:
+            import pymupdf
+            doc = pymupdf.open(stream=file_bytes, filetype="pdf")
+            return "\n".join([page.get_text() for page in doc])
+        except Exception:
+            try:
+                import fitz
+                doc = fitz.open(stream=file_bytes, filetype="pdf")
+                return "\n".join([page.get_text() for page in doc])
+            except Exception:
+                return file_bytes.decode("utf-8", errors="ignore")
+    elif ext == "docx":
+        try:
+            import docx
+            doc = docx.Document(io.BytesIO(file_bytes))
+            return "\n".join([p.text for p in doc.paragraphs])
+        except Exception:
+            return file_bytes.decode("utf-8", errors="ignore")
+    else:
+        return file_bytes.decode("utf-8", errors="ignore")
+
