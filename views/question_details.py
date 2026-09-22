@@ -119,3 +119,42 @@ def render_question_details_page(questions, analyses, db_handler):
                     edited_content=None
                 ))
                 st.info("Decision recorded: Ignored flag.")
+
+        # Section 4: Sample-Based Question Structure & Mark Recommender
+        st.markdown("---")
+        st.subheader("🎯 Sample-Based Question Structure Recommender")
+        st.caption("Generate new question structures and mark variations (2M, 3M, 5M, 10M, MCQ) based on this question's sample style.")
+
+        col_rec1, col_rec2, col_rec3 = st.columns([1, 1, 1])
+        with col_rec1:
+            target_marks = st.selectbox(
+                "Target Marks", 
+                [2.0, 3.0, 5.0, 10.0], 
+                index=2 if q.marks >= 5 else (0 if q.marks <= 2 else 1),
+                key=f"rec_marks_{q.id}"
+            )
+        with col_rec2:
+            target_type = st.selectbox(
+                "Target Question Type", 
+                ["Descriptive", "MCQ", "Numerical", "Code"],
+                index=0 if q.question_type not in ["MCQ", "Numerical", "Code"] else ["Descriptive", "MCQ", "Numerical", "Code"].index(q.question_type),
+                key=f"rec_type_{q.id}"
+            )
+        with col_rec3:
+            rec_topic = st.text_input("Topic", value=q.topic, key=f"rec_topic_{q.id}")
+
+        if st.button("✨ Recommend Question Structures", type="secondary", key=f"btn_rec_{q.id}", use_container_width=True):
+            from modules.improvement_generator import recommend_question_by_sample_and_marks
+            recs = recommend_question_by_sample_and_marks(
+                sample_text=q.text,
+                target_marks=target_marks,
+                target_type=target_type,
+                topic=rec_topic
+            )
+            
+            st.markdown(f"#### Recommended Structures ({target_type} - {int(target_marks)} Marks)")
+            for idx, r in enumerate(recs, 1):
+                st.markdown(f"**Variation {idx}: {r['title']}**")
+                st.code(r["structure"], language="markdown")
+                st.caption(f"💡 *Rationale:* {r['rationale']}")
+
