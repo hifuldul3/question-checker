@@ -47,7 +47,8 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
                     data=SAMPLE_CSV_PATH.read_bytes(),
                     file_name="sample_question_bank.csv",
                     mime="text/csv",
-                    use_container_width=True
+                    use_container_width=True,
+                    key="dl_sample_csv"
                 )
             xlsx_path = DATA_DIR / "sample_question_bank.xlsx"
             if xlsx_path.exists():
@@ -56,7 +57,8 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
                     data=xlsx_path.read_bytes(),
                     file_name="sample_question_bank.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True
+                    use_container_width=True,
+                    key="dl_sample_xlsx"
                 )
             pdf_path = DATA_DIR / "sample_question_bank.pdf"
             if pdf_path.exists():
@@ -65,7 +67,8 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
                     data=pdf_path.read_bytes(),
                     file_name="sample_question_bank.pdf",
                     mime="application/pdf",
-                    use_container_width=True
+                    use_container_width=True,
+                    key="dl_sample_pdf"
                 )
 
         if uploaded_file is not None:
@@ -89,7 +92,7 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
                         for err in val_errors:
                             st.write(err)
 
-                    if st.button("Process & Analyze Uploaded Question Bank", type="primary", use_container_width=True):
+                    if st.button("Process & Analyze Uploaded Question Bank", type="primary", use_container_width=True, key="btn_process_upload"):
                         with st.spinner("⚡ Processing & Analyzing Question Bank..."):
                             on_new_data_loaded_callback(valid_questions, uploaded_file.name)
                         st.success(f"Successfully loaded and analyzed {len(valid_questions)} questions from {uploaded_file.name}!")
@@ -114,7 +117,8 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
                     data=SAMPLE_SYLLABUS_PATH.read_bytes(),
                     file_name="sample_syllabus.txt",
                     mime="text/plain",
-                    use_container_width=True
+                    use_container_width=True,
+                    key="dl_syl_tab2"
                 )
 
             syl_gen_file = st.file_uploader(
@@ -153,7 +157,7 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
             )
         with c_action:
             st.markdown("<br>", unsafe_allow_html=True)
-            btn_generate_now = st.button("🚀 Generate Dynamic Question Bank Now", type="primary", use_container_width=True)
+            btn_generate_now = st.button("🚀 Generate Dynamic Question Bank Now", type="primary", use_container_width=True, key="btn_gen_syl_tab2")
 
         if btn_generate_now:
             if not gen_syl_text.strip():
@@ -238,7 +242,8 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
                     data=SAMPLE_SYLLABUS_PATH.read_bytes(),
                     file_name="sample_syllabus.txt",
                     mime="text/plain",
-                    use_container_width=True
+                    use_container_width=True,
+                    key="dl_syl_tab4"
                 )
             
             syl_file = st.file_uploader(
@@ -263,7 +268,7 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
                 help="Type or paste unit topics, concepts, and course content."
             )
 
-            if st.button("💾 Save & Re-Analyze Syllabus", type="primary", use_container_width=True):
+            if st.button("💾 Save & Re-Analyze Syllabus", type="primary", use_container_width=True, key="btn_save_syl_tab4"):
                 if not syl_text_input.strip():
                     st.error("Syllabus text cannot be empty.")
                 else:
@@ -286,7 +291,8 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
                     data=SAMPLE_COS_PATH.read_bytes(),
                     file_name="sample_cos.txt",
                     mime="text/plain",
-                    use_container_width=True
+                    use_container_width=True,
+                    key="dl_co_tab4"
                 )
 
             co_file = st.file_uploader(
@@ -320,7 +326,7 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
                 help="Enter one CO per line, e.g. CO1: Description"
             )
 
-            if st.button("💾 Save & Re-Analyze Course Outcomes", type="primary", use_container_width=True):
+            if st.button("💾 Save & Re-Analyze Course Outcomes", type="primary", use_container_width=True, key="btn_save_co_tab4"):
                 if not co_text_input.strip():
                     st.error("Course Outcomes text cannot be empty.")
                 else:
@@ -348,10 +354,11 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
             "Click below to immediately populate the application with a built-in 50-question database "
             "containing exact duplicates, near duplicates, ambiguous items, grammar errors, Bloom levels, and CO mappings."
         )
-        if st.button("🚀 Load 50-Question Demo Dataset", type="primary", use_container_width=True):
+        if st.button("🚀 Load 50-Question Demo Dataset", type="primary", use_container_width=True, key="btn_load_demo_tab5"):
             with st.spinner("⚡ Loading 50-Question Demo Bank..."):
                 load_demo_callback()
             st.success("Demo dataset loaded into EduGuard AI!")
             st.rerun()
+
 
 
