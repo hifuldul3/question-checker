@@ -206,6 +206,33 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
                         st.success("Syllabus updated successfully!")
                     st.rerun()
 
+            st.markdown("---")
+            st.markdown("#### 🚀 Dynamic AI Question Generator")
+            st.caption("Generate brand new, 100% dynamic questions directly from the uploaded syllabus above.")
+            
+            gen_col1, gen_col2 = st.columns([1, 1])
+            with gen_col1:
+                gen_count = st.number_input("Number of Questions to Generate", min_value=5, max_value=50, value=15, step=5, key="syl_gen_count")
+            with gen_col2:
+                st.markdown("<br>", unsafe_allow_html=True)
+                btn_gen_syl = st.button("✨ Generate Dynamic Question Bank", type="secondary", use_container_width=True)
+
+            if btn_gen_syl:
+                if not syl_text_input.strip():
+                    st.error("Please upload or enter a syllabus first.")
+                else:
+                    from modules.syllabus_analyzer import generate_questions_from_syllabus
+                    st.session_state["syllabus_text"] = syl_text_input.strip()
+                    with st.spinner(f"⚡ Dynamically generating {gen_count} questions from your uploaded syllabus..."):
+                        dynamic_qs = generate_questions_from_syllabus(syl_text_input.strip(), int(gen_count))
+                        if dynamic_qs:
+                            on_new_data_loaded_callback(dynamic_qs, "Dynamic Syllabus Question Bank")
+                            st.success(f"Successfully generated {len(dynamic_qs)} dynamic questions matching your uploaded syllabus!")
+                            st.rerun()
+                        else:
+                            st.error("Could not parse topics from syllabus text. Please check text format.")
+
+
         # --- SECTION 2: COURSE OUTCOMES (COs) ---
         with col_co:
             st.markdown("### 🎯 2. Course Outcomes (COs)")

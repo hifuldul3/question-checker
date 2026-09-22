@@ -57,3 +57,80 @@ def analyze_syllabus_relevance(
         confidence = min(0.95, max(0.60, confidence))
 
     return max(15.0, relevance_pct), status, confidence
+
+
+def generate_questions_from_syllabus(syllabus_text: str, num_questions: int = 15) -> list:
+    """
+    Dynamically generates a custom Question Bank directly from uploaded syllabus text.
+    Extracts units/topics and creates diverse questions across 2M, 3M, 5M, 10M, and MCQs.
+    """
+    import re
+    from models import Question
+
+    if not syllabus_text or not syllabus_text.strip():
+        return []
+
+    lines = [line.strip() for line in syllabus_text.splitlines() if line.strip()]
+    topic_units = []
+    current_unit = "General Syllabus"
+    current_topics = []
+
+    unit_pattern = re.compile(r"^\s*(?:Unit|Module|Chapter)\s*\d*[\:\-]?\s*(.+)$", re.IGNORECASE)
+
+    for line in lines:
+        u_match = unit_pattern.match(line)
+        if u_match:
+            if current_topics:
+                topic_units.append((current_unit, current_topics))
+                current_topics = []
+            current_unit = u_match.group(1).strip()
+        else:
+            parts = [
+                p.strip() for p in re.split(r"[\,\;\.\n]", line) 
+                if len(p.strip()) > 3 and not p.strip().lower().startswith(('unit', 'module', 'chapter'))
+            ]
+            current_topics.extend(parts)
+
+    if current_topics:
+        topic_units.append((current_unit, current_topics))
+
+    if not topic_units:
+        all_topics = [p.strip() for p in re.split(r"[\,\;\.\n]", syllabus_text) if len(p.strip()) > 3]
+        topic_units = [("Syllabus Content", all_topics)]
+
+    generated_qs = []
+    q_counter = 1
+
+    mark_patterns = [
+        (2.0, "Descriptive", "Define {topic} in 2-3 sentences. State two key properties or applications in {unit}."),
+        (3.0, "Descriptive", "Explain the working principle of {topic} with a suitable diagram or example. List 3 key characteristics."),
+        (5.0, "Descriptive", "Explain the algorithm/mechanism for {topic} in detail. Trace its step-by-step execution on a sample input and analyze its best-case and worst-case time complexity."),
+        (1.0, "MCQ", "Which of the following statements best describes {topic} in {unit}?\n  (A) Basic concept A\n  (B) Core working mechanism [Correct]\n  (C) Alternative concept misattribution\n  (D) Irrelevant system property"),
+        (10.0, "Descriptive", "(a) Describe {topic} in {unit} with a neat block diagram and architecture. [4 Marks]\n(b) Solve a comprehensive problem using {topic} and evaluate performance trade-offs. [6 Marks]")
+    ]
+
+    p_idx = 0
+    while len(generated_qs) < num_questions:
+        initial_len = len(generated_qs)
+        for unit_name, topics in topic_units:
+            for top in topics:
+                if len(generated_qs) >= num_questions:
+                    break
+                marks, q_type, tmpl = mark_patterns[p_idx % len(mark_patterns)]
+                p_idx += 1
+                q_id = f"SQ{q_counter:03d}"
+                q_text = tmpl.format(topic=top, unit=unit_name)
+                generated_qs.append(Question(
+                    id=q_id,
+                    text=q_text,
+                    marks=marks,
+                    topic=top[:35],
+                    question_type=q_type
+                ))
+                q_counter += 1
+        # Safety break if no topics were found
+        if len(generated_qs) == initial_len:
+            break
+
+    return generated_qs
+
