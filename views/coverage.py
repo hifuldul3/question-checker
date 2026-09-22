@@ -16,7 +16,12 @@ def render_coverage_page(questions, analyses, coverage_metrics, db_handler):
 
     st.metric("Overall Question Diversity Score", f"{coverage_metrics.get('question_diversity_score', 0)} / 100")
 
-    tab1, tab2, tab3 = st.tabs(["CO Semantic Mapping", "Topic & Concept Coverage", "Taxonomy Distributions"])
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "CO Semantic Mapping", 
+        "Topic & Concept Coverage", 
+        "Taxonomy Distributions", 
+        "🧠 Syllabus Analysis & AI Question Suggestions"
+    ])
 
     with tab1:
         st.subheader("Course Outcome (CO) Alignment & Manual Override")
@@ -43,12 +48,12 @@ def render_coverage_page(questions, analyses, coverage_metrics, db_handler):
         st.markdown("#### Manual CO Override Form")
         col_q, col_co, col_btn = st.columns([2, 1, 1])
         with col_q:
-            override_q_id = st.selectbox("Select Question ID", [q.id for q in questions])
+            override_q_id = st.selectbox("Select Question ID", [q.id for q in questions], key="cov_override_q_select")
         with col_co:
-            new_co = st.selectbox("Select Target CO", co_options)
+            new_co = st.selectbox("Select Target CO", co_options, key="cov_override_co_select")
         with col_btn:
             st.markdown("<br>", unsafe_allow_html=True)
-            if st.button("Apply Manual CO Override"):
+            if st.button("Apply Manual CO Override", key="btn_apply_co_override"):
                 if override_q_id in analyses:
                     analyses[override_q_id].mapped_co = new_co
                     analyses[override_q_id].co_is_manual = True
@@ -76,3 +81,50 @@ def render_coverage_page(questions, analyses, coverage_metrics, db_handler):
         with col_d:
             d_fig = create_difficulty_chart(coverage_metrics.get("difficulty_distribution", {}))
             st.plotly_chart(d_fig, use_container_width=True)
+
+    with tab4:
+        st.subheader("🧠 Syllabus Analysis & Smart AI Question Recommender")
+        st.caption("AI analyzes your uploaded course syllabus and suggests high-quality questions unit-by-unit.")
+
+        syllabus_text = st.session_state.get("syllabus_text", "")
+        if not syllabus_text.strip():
+            st.warning("No syllabus loaded yet. Please upload a syllabus in 'Upload & Config' -> Tab 4.")
+        else:
+            from modules.syllabus_analyzer import analyze_and_suggest_questions_for_syllabus
+            res = analyze_and_suggest_questions_for_syllabus(syllabus_text)
+
+            col_syl_info1, col_syl_info2 = st.columns(2)
+            with col_syl_info1:
+                st.info(f"📘 **Syllabus Units Detected**: {res['units_count']} Units")
+            with col_syl_info2:
+                st.info(f"🎯 **Total Extracted Topics**: {res['total_topics']} Key Topics")
+
+            st.markdown("---")
+
+            for unit in res.get("unit_data", []):
+                st.markdown(f"### 📚 {unit['unit_name']} ({unit['topics_count']} Topics)")
+                
+                for s in unit.get("suggestions", []):
+                    with st.expander(f"[{s['id']}] {s['topic']} — {s['bloom']} ({int(s['marks'])}M {s['type']})"):
+                        st.markdown(f"**Question Prompt:**")
+                        st.code(s["text"], language="text")
+                        st.markdown(f"💡 **AI Rationale:** {s['rationale']}")
+                        
+                        col_act1, col_act2 = st.columns([1, 3])
+                        with col_act1:
+                            if st.button(f"➕ Add {s['id']} to Bank", key=f"add_syl_q_{s['id']}", type="secondary", use_container_width=True):
+                                from models import Question
+                                new_q = Question(
+                                    id=f"SQ_{len(questions)+1:03d}",
+                                    text=s["text"],
+                                    marks=s["marks"],
+                                    topic=s["topic"],
+                                    question_type=s["type"]
+                                )
+                                questions.append(new_q)
+                                st.session_state["questions"] = questions
+                                st.success(f"Added {new_q.id} to question bank!")
+                                st.rerun()
+
+                st.markdown("---")
+

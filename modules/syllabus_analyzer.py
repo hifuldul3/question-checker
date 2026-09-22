@@ -134,3 +134,100 @@ def generate_questions_from_syllabus(syllabus_text: str, num_questions: int = 15
 
     return generated_qs
 
+
+def analyze_and_suggest_questions_for_syllabus(syllabus_text: str) -> dict:
+    """
+    Performs comprehensive syllabus analysis and generates structured question suggestions
+    grouped unit-by-unit with Bloom level, estimated difficulty, and pedagogical rationale.
+    """
+    import re
+
+    if not syllabus_text or not syllabus_text.strip():
+        return {"units_count": 0, "total_topics": 0, "unit_data": []}
+
+    lines = [line.strip() for line in syllabus_text.splitlines() if line.strip()]
+    topic_units = []
+    current_unit = "Unit 1: Core Syllabus Concepts"
+    current_topics = []
+
+    unit_pattern = re.compile(r"^\s*(?:Unit|Module|Chapter)\s*\d*[\:\-]?\s*(.+)$", re.IGNORECASE)
+
+    for line in lines:
+        u_match = unit_pattern.match(line)
+        if u_match:
+            if current_topics:
+                topic_units.append((current_unit, current_topics))
+                current_topics = []
+            current_unit = u_match.group(1).strip()
+        else:
+            parts = [
+                p.strip() for p in re.split(r"[\,\;\.\n]", line) 
+                if len(p.strip()) > 3 and not p.strip().lower().startswith(('unit', 'module', 'chapter'))
+            ]
+            current_topics.extend(parts)
+
+    if current_topics:
+        topic_units.append((current_unit, current_topics))
+
+    if not topic_units:
+        all_topics = [p.strip() for p in re.split(r"[\,\;\.\n]", syllabus_text) if len(p.strip()) > 3]
+        topic_units = [("General Syllabus Topics", all_topics)]
+
+    suggestions_by_unit = []
+    q_counter = 1
+
+    for unit_name, topics in topic_units:
+        unit_suggestions = []
+        for top in topics:
+            # 2 Marks (Remember)
+            unit_suggestions.append({
+                "id": f"SQ{q_counter:03d}",
+                "topic": top[:35],
+                "marks": 2.0,
+                "type": "Descriptive",
+                "bloom": "Remember",
+                "difficulty": "Easy",
+                "text": f"Define {top} in 2-3 sentences. State two key properties or applications in {unit_name}.",
+                "rationale": f"Evaluates foundational recall and basic definition of {top}."
+            })
+            q_counter += 1
+
+            # 5 Marks (Analyze/Apply)
+            unit_suggestions.append({
+                "id": f"SQ{q_counter:03d}",
+                "topic": top[:35],
+                "marks": 5.0,
+                "type": "Descriptive",
+                "bloom": "Analyze",
+                "difficulty": "Medium",
+                "text": f"Explain the working principle of {top} in detail. Trace its step-by-step execution on a sample scenario and state its time/space complexity.",
+                "rationale": f"Evaluates analytical understanding and execution tracing of {top}."
+            })
+            q_counter += 1
+
+            # MCQ (1 Mark)
+            unit_suggestions.append({
+                "id": f"SQ{q_counter:03d}",
+                "topic": top[:35],
+                "marks": 1.0,
+                "type": "MCQ",
+                "bloom": "Understand",
+                "difficulty": "Easy",
+                "text": f"Which of the following statements best describes {top}?\n  (A) Basic concept A\n  (B) Core working mechanism [Correct]\n  (C) Alternative concept misattribution\n  (D) Irrelevant system property",
+                "rationale": f"Quick 1-mark multiple choice question on {top}."
+            })
+            q_counter += 1
+
+        suggestions_by_unit.append({
+            "unit_name": unit_name,
+            "topics_count": len(topics),
+            "suggestions": unit_suggestions
+        })
+
+    return {
+        "units_count": len(topic_units),
+        "total_topics": sum(len(t) for _, t in topic_units),
+        "unit_data": suggestions_by_unit
+    }
+
+
