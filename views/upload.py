@@ -16,17 +16,19 @@ from eduguard_config import SAMPLE_CSV_PATH, SAMPLE_SYLLABUS_PATH, SAMPLE_COS_PA
 
 def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
     st.title("Question Bank & Configuration Upload")
-    st.markdown("Upload custom question banks (CSV, XLSX, PDF), course syllabus, and course outcomes.")
+    st.markdown("Upload question banks, dynamically generate questions from syllabus, or configure course outcomes.")
 
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "Question Bank Upload", 
-        "Direct Input (Quick Add)", 
-        "Syllabus & CO Upload", 
-        "Demo Data Quick Start"
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "📄 Upload Question Bank File", 
+        "🚀 Dynamic Syllabus Question Generator", 
+        "✏️ Direct Input (Quick Add)", 
+        "📚 Syllabus & CO Config", 
+        "⚡ Demo Data Quick Start"
     ])
 
+    # --- TAB 1: QUESTION BANK FILE UPLOAD ---
     with tab1:
-        st.subheader("1. Upload Question Bank File")
+        st.subheader("1. Upload Question Bank File (CSV, XLSX, PDF)")
 
         col_up, col_dl = st.columns([2, 1])
 
@@ -66,7 +68,6 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
                     use_container_width=True
                 )
 
-
         if uploaded_file is not None:
             file_ext = uploaded_file.name.split(".")[-1].lower()
             try:
@@ -88,7 +89,7 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
                         for err in val_errors:
                             st.write(err)
 
-                    if st.button("Process & Analyze Uploaded Question Bank", type="primary"):
+                    if st.button("Process & Analyze Uploaded Question Bank", type="primary", use_container_width=True):
                         with st.spinner("⚡ Processing & Analyzing Question Bank..."):
                             on_new_data_loaded_callback(valid_questions, uploaded_file.name)
                         st.success(f"Successfully loaded and analyzed {len(valid_questions)} questions from {uploaded_file.name}!")
@@ -96,8 +97,82 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
             except Exception as e:
                 st.error(f"Error reading file: {str(e)}")
 
+    # --- TAB 2: DYNAMIC SYLLABUS QUESTION GENERATOR (FEATURE PROMINENCE) ---
     with tab2:
-        st.subheader("2. Direct Question Input & Instant Analysis")
+        st.subheader("2. 🚀 Dynamic Syllabus AI Question Generator")
+        st.info("Upload or paste any course syllabus below to dynamically generate a 100% custom Question Bank matching your exact course topics.")
+
+        curr_syl = st.session_state.get("syllabus_text", "")
+
+        col_syl_file, col_syl_input = st.columns([1, 1])
+
+        with col_syl_file:
+            st.markdown("#### Step 1: Upload or Download Syllabus")
+            if SAMPLE_SYLLABUS_PATH.exists():
+                st.download_button(
+                    "📥 Download Sample Syllabus File",
+                    data=SAMPLE_SYLLABUS_PATH.read_bytes(),
+                    file_name="sample_syllabus.txt",
+                    mime="text/plain",
+                    use_container_width=True
+                )
+
+            syl_gen_file = st.file_uploader(
+                "Upload Syllabus File (.txt, .pdf, .docx, .csv)", 
+                type=["txt", "pdf", "docx", "csv"],
+                key="syl_gen_uploader"
+            )
+
+        with col_syl_input:
+            st.markdown("#### Step 2: Syllabus Text Content")
+            default_gen_text = curr_syl
+            if syl_gen_file is not None:
+                from modules.file_loader import extract_text_from_file
+                ext_text = extract_text_from_file(syl_gen_file.name, syl_gen_file.getvalue())
+                if ext_text.strip():
+                    default_gen_text = ext_text
+                    st.success(f"Loaded syllabus text from {syl_gen_file.name}!")
+
+            gen_syl_text = st.text_area(
+                "Syllabus Text (Units & Topics)",
+                value=default_gen_text,
+                height=160,
+                key="gen_syl_text_area",
+                help="Units, topics, and course outline text."
+            )
+
+        st.markdown("---")
+        st.markdown("#### Step 3: Generation Controls")
+        
+        c_count, c_action = st.columns([1, 1])
+        with c_count:
+            num_to_gen = st.number_input(
+                "Number of Dynamic Questions to Generate", 
+                min_value=5, max_value=50, value=15, step=5,
+                key="num_to_gen_input"
+            )
+        with c_action:
+            st.markdown("<br>", unsafe_allow_html=True)
+            btn_generate_now = st.button("🚀 Generate Dynamic Question Bank Now", type="primary", use_container_width=True)
+
+        if btn_generate_now:
+            if not gen_syl_text.strip():
+                st.error("Please upload or paste a course syllabus first.")
+            else:
+                from modules.syllabus_analyzer import generate_questions_from_syllabus
+                st.session_state["syllabus_text"] = gen_syl_text.strip()
+                with st.spinner(f"⚡ Dynamically generating {num_to_gen} questions from your uploaded syllabus..."):
+                    dynamic_qs = generate_questions_from_syllabus(gen_syl_text.strip(), int(num_to_gen))
+                    if dynamic_qs:
+                        on_new_data_loaded_callback(dynamic_qs, "Dynamic Syllabus Question Bank")
+                        st.success(f"🎉 Successfully generated {len(dynamic_qs)} dynamic questions matching your uploaded syllabus!")
+                        st.rerun()
+                    else:
+                        st.error("Could not parse topics from syllabus. Please check text format.")
+
+    # --- TAB 3: DIRECT INPUT (QUICK ADD) ---
+    with tab3:
+        st.subheader("3. Direct Question Input & Instant Analysis")
         st.caption("Type or paste custom questions directly to get immediate quality metrics and AI feedback.")
         
         with st.form("direct_input_form"):
@@ -130,18 +205,17 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
                     question_type=q_type_input
                 )
                 existing_qs = list(st.session_state.get("questions", []))
-                # Add or replace question in session state list
                 updated_qs = [q for q in existing_qs if q.id != new_q.id] + [new_q]
                 with st.spinner("⚡ Running AI quality analysis..."):
                     on_new_data_loaded_callback(updated_qs, "Custom Input Question Bank")
                 st.success(f"Question {new_q.id} analyzed successfully!")
                 st.rerun()
 
-    with tab3:
-        st.subheader("3. Syllabus & Course Outcomes (CO) Management")
+    # --- TAB 4: SYLLABUS & COURSE OUTCOMES CONFIG ---
+    with tab4:
+        st.subheader("4. Syllabus & Course Outcomes (CO) Management")
         st.caption("Upload files or paste text for your course syllabus and outcomes. Updating here automatically re-analyzes all questions.")
 
-        # --- Active Status Summary Cards ---
         curr_syl = st.session_state.get("syllabus_text", "")
         curr_cos = st.session_state.get("course_outcomes", [])
         
@@ -155,7 +229,6 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
 
         col_s, col_co = st.columns(2)
 
-        # --- SECTION 1: COURSE SYLLABUS ---
         with col_s:
             st.markdown("### 📚 1. Course Syllabus")
             
@@ -174,7 +247,6 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
                 key="syl_uploader"
             )
             
-            # Pre-fill text area with uploaded file content OR active session state
             default_syl_text = curr_syl
             if syl_file is not None:
                 from modules.file_loader import extract_text_from_file
@@ -196,7 +268,6 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
                     st.error("Syllabus text cannot be empty.")
                 else:
                     st.session_state["syllabus_text"] = syl_text_input.strip()
-                    # Re-analyze questions if available
                     existing_qs = st.session_state.get("questions", [])
                     if existing_qs:
                         with st.spinner("⚡ Re-analyzing syllabus relevance for all questions..."):
@@ -206,34 +277,6 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
                         st.success("Syllabus updated successfully!")
                     st.rerun()
 
-            st.markdown("---")
-            st.markdown("#### 🚀 Dynamic AI Question Generator")
-            st.caption("Generate brand new, 100% dynamic questions directly from the uploaded syllabus above.")
-            
-            gen_col1, gen_col2 = st.columns([1, 1])
-            with gen_col1:
-                gen_count = st.number_input("Number of Questions to Generate", min_value=5, max_value=50, value=15, step=5, key="syl_gen_count")
-            with gen_col2:
-                st.markdown("<br>", unsafe_allow_html=True)
-                btn_gen_syl = st.button("✨ Generate Dynamic Question Bank", type="secondary", use_container_width=True)
-
-            if btn_gen_syl:
-                if not syl_text_input.strip():
-                    st.error("Please upload or enter a syllabus first.")
-                else:
-                    from modules.syllabus_analyzer import generate_questions_from_syllabus
-                    st.session_state["syllabus_text"] = syl_text_input.strip()
-                    with st.spinner(f"⚡ Dynamically generating {gen_count} questions from your uploaded syllabus..."):
-                        dynamic_qs = generate_questions_from_syllabus(syl_text_input.strip(), int(gen_count))
-                        if dynamic_qs:
-                            on_new_data_loaded_callback(dynamic_qs, "Dynamic Syllabus Question Bank")
-                            st.success(f"Successfully generated {len(dynamic_qs)} dynamic questions matching your uploaded syllabus!")
-                            st.rerun()
-                        else:
-                            st.error("Could not parse topics from syllabus text. Please check text format.")
-
-
-        # --- SECTION 2: COURSE OUTCOMES (COs) ---
         with col_co:
             st.markdown("### 🎯 2. Course Outcomes (COs)")
             
@@ -252,7 +295,6 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
                 key="co_uploader"
             )
 
-            # Pre-fill CO text area
             default_co_text = "\n".join([f"{c.code}: {c.description}" for c in curr_cos])
             if co_file is not None:
                 from modules.file_loader import extract_text_from_file
@@ -299,16 +341,17 @@ def render_upload_page(on_new_data_loaded_callback, load_demo_callback):
                             st.success(f"Loaded {len(new_cos)} Course Outcomes successfully!")
                         st.rerun()
 
-
-    with tab4:
-        st.subheader("4. Instant Demo Setup")
+    # --- TAB 5: DEMO DATA QUICK START ---
+    with tab5:
+        st.subheader("5. Instant Demo Setup")
         st.info(
             "Click below to immediately populate the application with a built-in 50-question database "
             "containing exact duplicates, near duplicates, ambiguous items, grammar errors, Bloom levels, and CO mappings."
         )
-        if st.button("🚀 Load 50-Question Demo Dataset", type="primary"):
+        if st.button("🚀 Load 50-Question Demo Dataset", type="primary", use_container_width=True):
             with st.spinner("⚡ Loading 50-Question Demo Bank..."):
                 load_demo_callback()
             st.success("Demo dataset loaded into EduGuard AI!")
             st.rerun()
+
 
